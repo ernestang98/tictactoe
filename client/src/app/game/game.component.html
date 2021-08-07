@@ -105,6 +105,7 @@
         </div>
       </div>
       <h1 style="text-align: center">Player {{currentPlayerTurn}}'s turn</h1>
+      <p> You are player {{ player }} </p>
       <div class="gamefield">
         <div class="row">
           <div (click)="clickSquare($event)" position="0" id="0" class="square col-4"></div>
@@ -139,7 +140,9 @@
     </div>
     <div class="player-waitng" [hidden]="roomNumber<=0 || gameHas2Players">
       <h6 class="text-center title">Waiting for player to join</h6>
-      <img alt="" width="auto" class="game-loader" src="https://acegif.com/wp-content/uploads/loading-36.gif">
+      <div style="display: flex; justify-content: center">
+        <img alt="" width="auto" class="game-loader" src="https://acegif.com/wp-content/uploads/loading-36.gif">
+      </div>
       <h6 class="text-center title">You are in Room Number {{roomNumber}}, Tell your friend to join Room
         Number {{roomNumber}}</h6>
     </div>

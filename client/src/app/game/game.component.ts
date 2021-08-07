@@ -33,6 +33,7 @@ export class GameComponent implements OnInit {
   public roomNumber = 0;
   private playedText = '';
   private whoseTurn = 'X';
+  public player = null;
   public gameHas2Players = false;
 
   /*socket related Variable,ng-models and constant starts*/
@@ -43,7 +44,7 @@ export class GameComponent implements OnInit {
   updateBoard(arr, position): void {
     this.playedGameGrid = arr;
     // tslint:disable-next-line:prefer-for-of
-    const color = this.currentPlayerTurn === 1 ? 'player-one' : 'player-two';
+    const color = this.currentPlayerTurn === 1 ? 'player-two' : 'player-one';
     if (!(document.getElementById(String(position)).classList.contains('player-one') ||
       document.getElementById(String(position)).classList.contains('player-two'))) {
       document.getElementById(String(position)).classList.add(color);
@@ -75,7 +76,7 @@ export class GameComponent implements OnInit {
 
     // Socket event will receive the Opponent player's Move
     this.game.receivePlayerMove().subscribe((response) => {
-      console.log(response);
+      console.log("RECEIVING PLAYER MOVE");
       this.currentPlayerTurn = response.playedText === 'X' ? 2 : 1;
       this.updateBoard(response.board, response.position);
       console.log(this.currentPlayerTurn);
@@ -93,6 +94,7 @@ export class GameComponent implements OnInit {
     this.myTurn = false;
     this.whoWillStart = false;
     this.whoseTurn = 'O';
+    this.player = '2';
     this.game.joinNewRoom(roomNumber);
     console.log(this.myTurn);
     console.log(this.whoseTurn);
@@ -100,6 +102,7 @@ export class GameComponent implements OnInit {
   }
 
   createRoom(): void {
+    this.player = '1';
     this.myTurn = true;
     this.whoseTurn = 'X';
     this.whoWillStart = true;
@@ -187,13 +190,16 @@ export class GameComponent implements OnInit {
     console.log(this.whoseTurn);
     console.log(this.whoWillStart);
     if (this.myTurn) {
-      const position = subfield.currentTarget.getAttribute('position');
-      this.play(position);
       const color = this.currentPlayerTurn === 1 ? 'player-one' : 'player-two';
       if (!(subfield.currentTarget.classList.contains('player-one') ||
         subfield.currentTarget.classList.contains('player-two'))) {
+        const position = subfield.currentTarget.getAttribute('position');
+        this.play(position);
         subfield.currentTarget.classList.add(color);
         this.game.nextPlayer();
+      }
+      else {
+        console.log('TAKEN UP ALREADY');
       }
     } else {
       console.log('NOT MY TURN');
