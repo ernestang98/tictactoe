@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild} from '@angular/core';
+import {Component, OnInit, ViewChild} from '@angular/core';
 import {GameLogic} from '../game-logic';
 import {Renderer} from '@angular/compiler-cli/ngcc/src/rendering/renderer';
 
@@ -13,9 +13,9 @@ export class GameComponent implements OnInit {
   /*
   * Initial Game Variables and constants starts
   */
-  private title = 'Realtime Tic Tac Toe Using Angular 5 & Socket.IO  —  Rooms and Namespaces';
+  public currentPlayerTurn = 1;
   private gameGrid = [];
-  private playedGameGrid = [];
+  private playedGameGrid = ['-', '-', '-', '-', '-', '-', '-', '-', '-'];
   private movesPlayed = 0;
   private displayPlayerTurn = true;
   private myTurn = true;
@@ -34,9 +34,20 @@ export class GameComponent implements OnInit {
   private playedText = '';
   private whoseTurn = 'X';
   public gameHas2Players = false;
+
   /*socket related Variable,ng-models and constant starts*/
 
   constructor(public game: GameLogic) {
+  }
+
+  updateBoard(arr, position): void {
+    this.playedGameGrid = arr;
+    // tslint:disable-next-line:prefer-for-of
+    const color = this.currentPlayerTurn === 1 ? 'player-one' : 'player-two';
+    if (!(document.getElementById(String(position)).classList.contains('player-one') ||
+      document.getElementById(String(position)).classList.contains('player-two'))) {
+      document.getElementById(String(position)).classList.add(color);
+    }
   }
 
   ngOnInit(): void {
@@ -45,7 +56,6 @@ export class GameComponent implements OnInit {
 
     // HTTP call to get Empty rooms and total room numbers
     this.game.getRoomStats().then(response => {
-      console.log(response);
       this.totalRooms = response.totalRoomCount;
       this.emptyRooms = response.emptyRooms;
     });
@@ -58,16 +68,17 @@ export class GameComponent implements OnInit {
 
     // Socket event to start a new Game
     this.game.startGame().subscribe((response) => {
-      console.log('RESPONSE: ' + response);
       // tslint:disable-next-line:radix
       this.roomNumber = parseInt(response.roomNumber);
       this.gameHas2Players = true;
-      console.log(this.gameHas2Players);
-      console.log(this.roomNumber);
     });
 
     // Socket event will receive the Opponent player's Move
     this.game.receivePlayerMove().subscribe((response) => {
+      console.log(response);
+      this.currentPlayerTurn = response.playedText === 'X' ? 2 : 1;
+      this.updateBoard(response.board, response.position);
+      console.log(this.currentPlayerTurn);
       this.opponentMove(response);
     });
 
@@ -77,63 +88,71 @@ export class GameComponent implements OnInit {
       window.location.reload();
     });
   }
+
   joinRoom(roomNumber): void {
     this.myTurn = false;
     this.whoWillStart = false;
     this.whoseTurn = 'O';
     this.game.joinNewRoom(roomNumber);
+    console.log(this.myTurn);
+    console.log(this.whoseTurn);
+    console.log(this.whoWillStart);
   }
+
   createRoom(): void {
     this.myTurn = true;
     this.whoseTurn = 'X';
     this.whoWillStart = true;
     this.game.createNewRoom().subscribe((response) => {
-      console.log(response);
       this.roomNumber = response.roomNumber;
     });
   }
+
   opponentMove(params): void {
+    console.log("OPPONENT MOVE!!!!");
     this.displayPlayerTurn = !this.displayPlayerTurn;
-    if (params.winner ===  null) {
-      this.playedGameGrid[params.position] = {
-        position: params.position,
-        player: params.playedText
-      };
+    if (params.winner === null) {
+      // this.playedGameGrid[params.position] = {
+      //   position: params.position,
+      //   player: params.playedText
+      // };
       this.myTurn = true;
-    }else {
+    } else {
       alert(params.winner);
       this.resetGame();
     }
   }
+
   // tslint:disable-next-line:variable-name
   play(number: string): void {
     if (!this.myTurn) {
       return;
     }
     this.movesPlayed += 1;
-    this.playedGameGrid[number] = {
-      position: number,
-      player: this.whoseTurn
-    };
+    this.playedGameGrid[number] = this.whoseTurn;
+    console.log(this.playedGameGrid);
     this.game.sendPlayerMove({
-      roomNumber : this.roomNumber,
+      roomNumber: this.roomNumber,
       playedText: this.whoseTurn,
-      position : number,
+      position: number,
       playedGameGrid: this.playedGameGrid,
-      movesPlayed : this.movesPlayed
+      movesPlayed: this.movesPlayed
     });
     this.myTurn = false;
     this.displayPlayerTurn = !this.displayPlayerTurn;
+    this.currentPlayerTurn = this.currentPlayerTurn === 1 ? 2 : 1;
   }
+
   // tslint:disable-next-line:variable-name
   renderPlayedText(number: number): string {
     if (this.playedGameGrid[number] === undefined) {
       return '';
-    }else {
-      this.playedText = this.playedGameGrid[number].player;
+    } else {
+      // this.playedText = this.playedGameGrid[number].player;
       return this.playedText;
     }
   }
+
   resetGame(): void {
     this.playedGameGrid = [];
     this.gameGrid = [];
@@ -143,11 +162,12 @@ export class GameComponent implements OnInit {
       this.myTurn = true;
       this.displayPlayerTurn = true;
       this.whoseTurn = 'X';
-    }else {
+    } else {
       this.displayPlayerTurn = true;
       this.whoseTurn = 'O';
     }
   }
+
   startGame(): void {
     // this.game.gameStart();
     const currentPlayer = 'Current turn: Player ' + this.game.currentTurn;
@@ -162,8 +182,22 @@ export class GameComponent implements OnInit {
     information.innerHTML = currentPlayer;
   }
 
-  clickSquare(e): void {
-    console.log(165238716253867123);
+  async clickSquare(subfield: any): Promise<void> {
+    console.log(this.myTurn);
+    console.log(this.whoseTurn);
+    console.log(this.whoWillStart);
+    if (this.myTurn) {
+      const position = subfield.currentTarget.getAttribute('position');
+      this.play(position);
+      const color = this.currentPlayerTurn === 1 ? 'player-one' : 'player-two';
+      if (!(subfield.currentTarget.classList.contains('player-one') ||
+        subfield.currentTarget.classList.contains('player-two'))) {
+        subfield.currentTarget.classList.add(color);
+        this.game.nextPlayer();
+      }
+    } else {
+      console.log('NOT MY TURN');
+    }
   }
 
   // async clickSquare(subfield: any): Promise<void> {

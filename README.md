@@ -7,3 +7,11 @@
 - The moment you refresh/exit the tab you're on, 'disconnecting' is triggered
 
 - Version for Redis, Socket, JavasScript has been updated accordingly from tutorial, do make sure you update the code base 
+
+## Game Rules
+
+- X will always start first
+
+- Creator of the room will always start first
+
+- 

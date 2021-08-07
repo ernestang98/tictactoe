@@ -108,6 +108,7 @@ export class GameLogic {
   receivePlayerMove(): any {
     return new Observable(observer => {
       this.socket.on('receive-move', (data) => {
+        console.log('RECEIVED MOVE');
         observer.next(
           data
         );
@@ -121,7 +122,6 @@ export class GameLogic {
   playerLeft(): any {
     return new Observable(observer => {
       this.socket.on('room-disconnect', (data) => {
-        console.log(1523891625387)
         observer.next(
           data
         );

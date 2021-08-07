@@ -70,6 +70,17 @@
     height: 300px;
   }
 
+  .player {
+    border-bottom: 5px solid black;
+  }
+
+  .gameboard {
+    width: 300px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 50px;
+  }
+
 </style>
 
 <div class="main-container">
@@ -82,33 +93,33 @@
   <!--    <div class="d-flex justify-content-center">-->
   <!--        <button *ngIf="this.game.gameStatus === 1" (click)="stopGame()" mat-raised-button color="accent">Stop</button>-->
   <!--    </div>-->
-  <!--    <div *ngIf="this.game.gameStatus === 1" class="gameboard">-->
-  <!--        <div class="player player-one align-self-center">-->
-  <!--            <p class="mat-body-1">Player 1</p>-->
-  <!--        </div>-->
-
-  <!--        <div class="player player-two align-self-center">-->
-  <!--            <p class="mat-body-1">Player 2</p>-->
-  <!--        </div>-->
-  <!--    </div>-->
   <div class="card bg-light mb-3" style="width: 60rem;">
     <div class="card-header header"><h1>Tic-Tac-Toe Game</h1></div>
     <div class="gamefield-container container-fluid" [hidden]="roomNumber<=0 || !gameHas2Players">
+      <div *ngIf="this.game.gameStatus === 1" class="gameboard">
+        <div class="player player-one align-self-center">
+          <p class="mat-body-1">Player 1</p>
+        </div>
+        <div class="player player-two align-self-center">
+          <p class="mat-body-1">Player 2</p>
+        </div>
+      </div>
+      <h1 style="text-align: center">Player {{currentPlayerTurn}}'s turn</h1>
       <div class="gamefield">
         <div class="row">
-          <div (click)="clickSquare($event)" position="0" class="square col-4"></div>
-          <div (click)="clickSquare($event)" position="1" class="square col-4"></div>
-          <div (click)="clickSquare($event)" position="2" class="square col-4"></div>
+          <div (click)="clickSquare($event)" position="0" id="0" class="square col-4"></div>
+          <div (click)="clickSquare($event)" position="1" id="1" class="square col-4"></div>
+          <div (click)="clickSquare($event)" position="2" id="2" class="square col-4"></div>
         </div>
         <div class="row">
-          <div (click)="clickSquare($event)" position="3" class="square col-4"></div>
-          <div (click)="clickSquare($event)" position="4" class="square col-4"></div>
-          <div (click)="clickSquare($event)" position="5" class="square col-4"></div>
+          <div (click)="clickSquare($event)" position="3" id="3" class="square col-4"></div>
+          <div (click)="clickSquare($event)" position="4" id="4" class="square col-4"></div>
+          <div (click)="clickSquare($event)" position="5" id="5" class="square col-4"></div>
         </div>
         <div class="row">
-          <div (click)="clickSquare($event)" position="6" class="square col-4"></div>
-          <div (click)="clickSquare($event)" position="7" class="square col-4"></div>
-          <div (click)="clickSquare($event)" position="8" class="square col-4"></div>
+          <div (click)="clickSquare($event)" position="6" id="6" class="square col-4"></div>
+          <div (click)="clickSquare($event)" position="7" id="7" class="square col-4"></div>
+          <div (click)="clickSquare($event)" position="8" id="8" class="square col-4"></div>
         </div>
       </div>
     </div>

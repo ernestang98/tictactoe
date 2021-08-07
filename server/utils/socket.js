@@ -8,25 +8,25 @@ class Socket{
 
         /* Win combination to check winner of the Game.*/
         this.winCombinationForPlayer1 = [
-            [1, 1, 1, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 1, 1, 1, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 1, 1, 1],
-            [1, 0, 0, 1, 0, 0, 1, 0, 0],
-            [0, 1, 0, 0, 1, 0, 0, 1, 0],
-            [0, 0, 1, 0, 0, 1, 0, 0, 1],
-            [1, 0, 0, 0, 1, 0, 0, 0, 1],
-            [0, 0, 1, 0, 1, 0, 1, 0, 0]
+            ["X", "X", "X", "-", "-", "-", "-", "-", "-"],
+            ["-", "-", "-", "X", "X", "X", "-", "-", "-"],
+            ["-", "-", "-", "-", "-", "-", "X", "X", "X"],
+            ["X", "-", "-", "X", "-", "-", "X", "-", "-"],
+            ["-", "X", "-", "-", "X", "-", "-", "X", "-"],
+            ["-", "-", "X", "-", "-", "X", "-", "-", "X"],
+            ["X", "-", "-", "-", "X", "-", "-", "-", "X"],
+            ["-", "-", "X", "-", "X", "-", "X", "-", "-"]
         ];
 
         this.winCombinationForPlayer2 = [
-            [2, 2, 2, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 2, 2, 2, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 2, 2, 2],
-            [2, 0, 0, 2, 0, 0, 2, 0, 0],
-            [0, 2, 0, 0, 2, 0, 0, 2, 0],
-            [0, 0, 2, 0, 0, 2, 0, 0, 2],
-            [2, 0, 0, 0, 2, 0, 0, 0, 2],
-            [0, 0, 2, 0, 2, 0, 2, 0, 0]
+            ["0", "0", "0", "-", "-", "-", "-", "-", "-"],
+            ["-", "-", "-", "0", "0", "0", "-", "-", "-"],
+            ["-", "-", "-", "-", "-", "-", "0", "0", "0"],
+            ["0", "-", "-", "0", "-", "-", "0", "-", "-"],
+            ["-", "0", "-", "-", "0", "-", "-", "0", "-"],
+            ["-", "-", "0", "-", "-", "0", "-", "-", "0"],
+            ["0", "-", "-", "-", "0", "-", "-", "-", "0"],
+            ["-", "-", "0", "-", "0", "-", "0", "-", "-"]
         ];
 
         this.redisDB.set("totalRoomCount", 0);
@@ -141,14 +141,14 @@ class Socket{
             * Also Here we will calaculate the winner.
             */
             socket.on('send-move', (data) => {
-                const currentPlayer = data.currentPlayer === 2 ? 2 : 1;
+                const currentPlayer = data.currentPlayer === "X" ? "X" : "0";
                 const playedGameGrid = data.playedGameGrid;
                 const movesPlayed = data.movesPlayed;
                 const roomNumber = data.roomNumber;
                 let winner = null;
                 let winCombinationToLookAt = this.winCombinationForPlayer2
 
-                if (currentPlayer === 1) {
+                if (currentPlayer === "X") {
                     winCombinationToLookAt = this.winCombinationForPlayer1
                 }
 
@@ -181,18 +181,21 @@ class Socket{
                     }
                     return false
                 });
-
+                console.log(winner)
                 if (winner === null){
+                    console.log(playedGameGrid);
                     socket.broadcast.to("room-"+roomNumber).emit('receive-move', {
                         'position' : data.position,
                         'playedText' : data.playedText,
-                        'winner' : null
+                        'winner' : null,
+                        'board' : playedGameGrid
                     });
                 } else{
                     IO.sockets.in("room-"+roomNumber).emit('receive-move', {
                         'position' : data.position,
                         'playedText' : data.playedText,
-                        'winner' : winner
+                        'winner' : winner,
+                        'board' : [0, 0, 0, 0, 0, 0, 0, 0, 0]
                     });
                 }
             });
