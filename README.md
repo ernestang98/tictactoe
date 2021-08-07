@@ -14,4 +14,8 @@
 
 - Creator of the room will always start first
 
-- 
+## Bugs + Possible features
+
+- When player creates the room and leaves it, room will persist (should just delete room if person is waiting and disconnects)
+
+- Allow reset/auto reset when player wins
