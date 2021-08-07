@@ -19,14 +19,14 @@ class Socket{
         ];
 
         this.winCombinationForPlayer2 = [
-            ["0", "0", "0", "-", "-", "-", "-", "-", "-"],
-            ["-", "-", "-", "0", "0", "0", "-", "-", "-"],
-            ["-", "-", "-", "-", "-", "-", "0", "0", "0"],
-            ["0", "-", "-", "0", "-", "-", "0", "-", "-"],
-            ["-", "0", "-", "-", "0", "-", "-", "0", "-"],
-            ["-", "-", "0", "-", "-", "0", "-", "-", "0"],
-            ["0", "-", "-", "-", "0", "-", "-", "-", "0"],
-            ["-", "-", "0", "-", "0", "-", "0", "-", "-"]
+            ["O", "O", "O", "-", "-", "-", "-", "-", "-"],
+            ["-", "-", "-", "O", "O", "O", "-", "-", "-"],
+            ["-", "-", "-", "-", "-", "-", "O", "O", "O"],
+            ["O", "-", "-", "O", "-", "-", "O", "-", "-"],
+            ["-", "O", "-", "-", "O", "-", "-", "O", "-"],
+            ["-", "-", "O", "-", "-", "O", "-", "-", "O"],
+            ["O", "-", "-", "-", "O", "-", "-", "-", "O"],
+            ["-", "-", "O", "-", "O", "-", "O", "-", "-"]
         ];
 
         this.redisDB.set("totalRoomCount", 0);
@@ -141,7 +141,9 @@ class Socket{
             * Also Here we will calaculate the winner.
             */
             socket.on('send-move', (data) => {
-                const currentPlayer = data.currentPlayer === "X" ? "X" : "0";
+                console.log(data)
+                const currentPlayer = data.currentPlayer === "X" ? "X" : "O";
+                console.log("Current player: " + currentPlayer)
                 const playedGameGrid = data.playedGameGrid;
                 const movesPlayed = data.movesPlayed;
                 const roomNumber = data.roomNumber;
@@ -151,6 +153,24 @@ class Socket{
                 if (currentPlayer === "X") {
                     winCombinationToLookAt = this.winCombinationForPlayer1
                 }
+
+                let tempPlayedGrid = []
+
+                console.log(winCombinationToLookAt);
+                console.log(currentPlayer)
+                console.log(playedGameGrid)
+
+                for (let o = 0; o < playedGameGrid.length; o++) {
+                    console.log(playedGameGrid[o])
+                    console.log(currentPlayer.toString())
+                    if (playedGameGrid[o].toString() !== currentPlayer.toString()) {
+                        tempPlayedGrid.push("-")
+                    } else {
+                        tempPlayedGrid.push(currentPlayer)
+                    }
+                }
+
+                console.log("temp player grid: " + tempPlayedGrid)
 
                 /* checking the winner */
 
@@ -163,7 +183,7 @@ class Socket{
                         return false;
                     }
                     for (let i = 0; i < firstArray.length; i++) {
-                        if (firstArray[i] === 0) {
+                        if (firstArray[i] === "-") {
                             console.log('this is the checkarray, we can ignore all 0s and focus on the ones that matter');
                         }
                         else if (firstArray[i] !== secondArray[i]) {
@@ -174,7 +194,7 @@ class Socket{
                 }
 
                 winCombinationToLookAt.forEach((checkField, checkIndex) => {
-                    if (arrayEquals(checkField, playedGameGrid)) {
+                    if (arrayEquals(checkField, tempPlayedGrid)) {
                         winner = "Player " + currentPlayer + " has won!";
                     } else if (movesPlayed === 9) {
                         winner = 'Game Draw';
@@ -195,7 +215,7 @@ class Socket{
                         'position' : data.position,
                         'playedText' : data.playedText,
                         'winner' : winner,
-                        'board' : [0, 0, 0, 0, 0, 0, 0, 0, 0]
+                        'board' : ["O", "O", "O", "O", "O", "O", "O", "O", "O"]
                     });
                 }
             });
