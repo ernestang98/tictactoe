@@ -7,14 +7,17 @@
     align-items: center;
     height: 100vh;
   }
+
   .header {
     padding-top: 30px;
     font-weight: 900;
     text-align: center;
   }
+
   h1 {
     font-size: 40px !important;
   }
+
   h5 {
     font: 33px sans-serif;
     margin-top: 30px;
@@ -25,9 +28,11 @@
     color: #dfdfdf;
     margin-bottom: 20px;
   }
+
   .title {
     font-size: 15px;
   }
+
   h5 :before {
     border-top: 2px solid #dfdfdf;
     content: "";
@@ -41,13 +46,13 @@
     z-index: -1;
   }
 
-  h5  span {
+  h5 span {
     background: #f8f9fa;
     padding: 0 15px;
   }
 
   .player-waitng,
-  .room-list{
+  .room-list {
     width: 50%;
     margin: 10px auto 20px;
   }
@@ -56,7 +61,7 @@
     margin-right: 5px;
   }
 
-  .room-number a:hover{
+  .room-number a:hover {
     color: #fff;
     cursor: pointer;
   }
@@ -82,31 +87,32 @@
   <!--            <p class="mat-body-1">Player 1</p>-->
   <!--        </div>-->
 
-  <!--        <div class="gamefield container-fluid">-->
-  <!--            <div class="row">-->
-  <!--                <div (click)="clickSquare($event)" position="0" class="square col-4"></div>-->
-  <!--                <div (click)="clickSquare($event)" position="1" class="square col-4"></div>-->
-  <!--                <div (click)="clickSquare($event)" position="2" class="square col-4"></div>-->
-  <!--            </div>-->
-  <!--            <div class="row">-->
-  <!--                <div (click)="clickSquare($event)" position="3" class="square col-4"></div>-->
-  <!--                <div (click)="clickSquare($event)" position="4" class="square col-4"></div>-->
-  <!--                <div (click)="clickSquare($event)" position="5" class="square col-4"></div>-->
-  <!--            </div>-->
-  <!--            <div class="row">-->
-  <!--                <div (click)="clickSquare($event)" position="6" class="square col-4"></div>-->
-  <!--                <div (click)="clickSquare($event)" position="7" class="square col-4"></div>-->
-  <!--                <div (click)="clickSquare($event)" position="8" class="square col-4"></div>-->
-  <!--            </div>-->
-  <!--        </div>-->
-
   <!--        <div class="player player-two align-self-center">-->
   <!--            <p class="mat-body-1">Player 2</p>-->
   <!--        </div>-->
   <!--    </div>-->
   <div class="card bg-light mb-3" style="width: 60rem;">
     <div class="card-header header"><h1>Tic-Tac-Toe Game</h1></div>
-    <div class="room-list" [hidden]="roomNumber>0">
+    <div class="gamefield-container container-fluid" [hidden]="roomNumber<=0 || !gameHas2Players">
+      <div class="gamefield">
+        <div class="row">
+          <div (click)="clickSquare($event)" position="0" class="square col-4"></div>
+          <div (click)="clickSquare($event)" position="1" class="square col-4"></div>
+          <div (click)="clickSquare($event)" position="2" class="square col-4"></div>
+        </div>
+        <div class="row">
+          <div (click)="clickSquare($event)" position="3" class="square col-4"></div>
+          <div (click)="clickSquare($event)" position="4" class="square col-4"></div>
+          <div (click)="clickSquare($event)" position="5" class="square col-4"></div>
+        </div>
+        <div class="row">
+          <div (click)="clickSquare($event)" position="6" class="square col-4"></div>
+          <div (click)="clickSquare($event)" position="7" class="square col-4"></div>
+          <div (click)="clickSquare($event)" position="8" class="square col-4"></div>
+        </div>
+      </div>
+    </div>
+    <div class="room-list" [hidden]="roomNumber>0 || gameHas2Players">
       <h6 class="text-center title">Available Rooms to Join</h6>
       <ul class="nav nav-pills">
         <li class="nav-item room-number" *ngFor="let number of emptyRooms">
@@ -120,10 +126,11 @@
       </h5>
       <button class="btn btn-primary" (click)="createRoom()" style="margin-bottom: 30px"> Create New Room</button>
     </div>
-    <div class="player-waitng" [hidden]="roomNumber<=0">
+    <div class="player-waitng" [hidden]="roomNumber<=0 || gameHas2Players">
       <h6 class="text-center title">Waiting for player to join</h6>
       <img alt="" width="auto" class="game-loader" src="https://acegif.com/wp-content/uploads/loading-36.gif">
-      <h6 class="text-center title">You are in Room Number {{roomNumber}}, Tell your friend to join Room Number {{roomNumber}}</h6>
+      <h6 class="text-center title">You are in Room Number {{roomNumber}}, Tell your friend to join Room
+        Number {{roomNumber}}</h6>
     </div>
   </div>
 </div>

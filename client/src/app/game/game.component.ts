@@ -33,6 +33,7 @@ export class GameComponent implements OnInit {
   public roomNumber = 0;
   private playedText = '';
   private whoseTurn = 'X';
+  public gameHas2Players = false;
   /*socket related Variable,ng-models and constant starts*/
 
   constructor(public game: GameLogic) {
@@ -44,19 +45,25 @@ export class GameComponent implements OnInit {
 
     // HTTP call to get Empty rooms and total room numbers
     this.game.getRoomStats().then(response => {
+      console.log(response);
       this.totalRooms = response.totalRoomCount;
       this.emptyRooms = response.emptyRooms;
     });
 
-    // Socket evenet will total available rooms to play.
+    // Socket event will total available rooms to play.
     this.game.getRoomsAvailable().subscribe(response => {
       this.totalRooms = response.totalRoomCount;
       this.emptyRooms = response.emptyRooms;
     });
 
-    // Socket evenet to start a new Game
+    // Socket event to start a new Game
     this.game.startGame().subscribe((response) => {
-      this.roomNumber = response.roomNumber;
+      console.log('RESPONSE: ' + response);
+      // tslint:disable-next-line:radix
+      this.roomNumber = parseInt(response.roomNumber);
+      this.gameHas2Players = true;
+      console.log(this.gameHas2Players);
+      console.log(this.roomNumber);
     });
 
     // Socket event will receive the Opponent player's Move
@@ -80,7 +87,8 @@ export class GameComponent implements OnInit {
     this.myTurn = true;
     this.whoseTurn = 'X';
     this.whoWillStart = true;
-    this.game.createNewRoom().subscribe( (response) => {
+    this.game.createNewRoom().subscribe((response) => {
+      console.log(response);
       this.roomNumber = response.roomNumber;
     });
   }
@@ -152,6 +160,10 @@ export class GameComponent implements OnInit {
     const currentPlayer = 'Start the game';
     const information = document.querySelector('.current-status');
     information.innerHTML = currentPlayer;
+  }
+
+  clickSquare(e): void {
+    console.log(165238716253867123);
   }
 
   // async clickSquare(subfield: any): Promise<void> {

@@ -1,5 +1,7 @@
 /*
 * Multiplayer Tic-Tac-Toe Game using Angular, Nodejs
+* https://www.youtube.com/watch?v=nEC4iYRD5n0
+* https://www.youtube.com/watch?v=dJQWUubvpIc
 * https://www.codershood.info/2018/01/07/building-dead-simple-multiplayer-tic-tac-toe-game-using-angular-nodejs-socket-io-rooms-part-1/
 * https://www.codershood.info/2018/01/11/building-dead-simple-multiplayer-tic-tac-toe-game-using-angular-nodejs-socket-io-rooms-part-2/
 * https://gist.github.com/tomysmile/1b8a321e7c58499ef9f9441b2faa0aa8

@@ -66,7 +66,7 @@ export class GameLogic {
     });
   }
 
-  /* Method to create new room, create-room event.*/
+  /* Method to create new room, create-room event. */
   createNewRoom(): any {
     this.socket.emit('create-room', {test: 9909});
     return new Observable(observer => {
@@ -121,6 +121,7 @@ export class GameLogic {
   playerLeft(): any {
     return new Observable(observer => {
       this.socket.on('room-disconnect', (data) => {
+        console.log(1523891625387)
         observer.next(
           data
         );

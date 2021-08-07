@@ -1,5 +1,3 @@
-// https://www.youtube.com/watch?v=nEC4iYRD5n0
-
 import {BrowserModule} from '@angular/platform-browser';
 import {NgModule} from '@angular/core';
 

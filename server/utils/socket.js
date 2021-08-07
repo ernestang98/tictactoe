@@ -1,3 +1,5 @@
+const utils = require('./utils');
+
 class Socket{
 
     constructor(socket, redisDB){
@@ -27,9 +29,9 @@ class Socket{
             [0, 0, 2, 0, 2, 0, 2, 0, 0]
         ];
 
-        this.redisDB.set("totalRoomCount", 1);
+        this.redisDB.set("totalRoomCount", 0);
         this.redisDB.set("allRooms", JSON.stringify({
-            emptyRooms: [1],
+            emptyRooms: [],
             fullRooms : []
         }));
     }
@@ -37,11 +39,10 @@ class Socket{
     socketEvents(){
         const IO = this.io;
         const redisDB = this.redisDB;
-        console.log()
 
         IO.on('connection', (socket) => {
             socket.setMaxListeners(20); /* Setting Maximum listeners */
-
+            utils.printLog("New Connection!", IO.sockets.adapter.sids)
             /*
             * In this Event user will create a new Room and can ask someone to join. Rooms are joined in increasing
             * order, hence for line 60, you can just check if the totalroomcount is found in the emptyrooms.
@@ -51,25 +52,17 @@ class Socket{
                 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all
                 // basically gets the values of totalRoomCount and allRooms
                 Promise.all(['totalRoomCount','allRooms'].map(key => this.redisDB.getAsync(key))).then(values => {
-                    console.log("THE VALUES ARE: " + values)
                     let totalRoomCount = values[0];
-                    console.log(totalRoomCount)
-
                     const allRooms = JSON.parse(values[1]);
-                    console.log(allRooms)
                     let fullRooms = allRooms['fullRooms'];
                     let emptyRooms = allRooms['emptyRooms'];
 
                     /* Checking the if the room is empty. */
                     let isIncludes = emptyRooms.includes(totalRoomCount);
-                    console.log("IS INCLUDED: " + isIncludes)
 
                     if(!isIncludes){
-                        console.log("TOTAL ROOM COUNT: " + totalRoomCount)
                         totalRoomCount++;
-                        console.log("TOTAL ROOM COUNT AFTER ADDING: " + totalRoomCount)
                         emptyRooms.push(totalRoomCount);
-                        console.log(emptyRooms)
                         socket.join("room-"+totalRoomCount);
                         this.redisDB.set("totalRoomCount", totalRoomCount, function (err, res) {
                             console.log("set: ", res)
@@ -83,14 +76,15 @@ class Socket{
                             'fullRooms' : fullRooms,
                             'emptyRooms': emptyRooms
                         });
-                        //
-                        // IO.sockets.in("room-"+totalRoomCount).emit('new-room', {
-                        //     'totalRoomCount' : totalRoomCount,
-                        //     'fullRooms' : fullRooms,
-                        //     'emptyRooms': emptyRooms,
-                        //     'roomNumber' : totalRoomCount
-                        // });
+                        IO.sockets.in("room-"+totalRoomCount).emit('new-room', {
+                            'totalRoomCount' : totalRoomCount,
+                            'fullRooms' : fullRooms,
+                            'emptyRooms': emptyRooms,
+                            'roomNumber' : totalRoomCount
+                        });
                     }
+
+                    utils.printLog("Entered a room!", IO.sockets.adapter.sids)
                 });
             });
 
@@ -123,25 +117,22 @@ class Socket{
                         for (let i of iter) {
                             const setOfRooms = Array.from(IO.sockets.adapter.sids.get(i))
                             if (setOfRooms[0] === socket.id) {
-                                const currentRoom = setOfRooms[1]
-                                console.log(totalRoomCount)
-                                console.log(fullRooms)
-                                console.log(emptyRooms)
-                                console.log(currentRoom)
+                                let currentRoom = setOfRooms[1]
                                 IO.emit('rooms-available', {
                                     'totalRoomCount' : totalRoomCount,
                                     'fullRooms' : fullRooms,
                                     'emptyRooms': emptyRooms
                                 });
-                                // IO.sockets.in("room-"+roomNumber).emit('start-game', {
-                                //     'totalRoomCount' : totalRoomCount,
-                                //     'fullRooms' : fullRooms,
-                                //     'emptyRooms': emptyRooms,
-                                //     'roomNumber' : currentRoom
-                                // });
+                                IO.sockets.in("room-"+roomNumber).emit('start-game', {
+                                    'totalRoomCount' : totalRoomCount,
+                                    'fullRooms' : fullRooms,
+                                    'emptyRooms': emptyRooms,
+                                    'roomNumber' : currentRoom.substring(5)
+                                });
                             }
                         }
                     }
+                    utils.printLog("Joined a room!", IO.sockets.adapter.sids)
                 });
             });
 
@@ -211,9 +202,11 @@ class Socket{
             * And we will update teh Redis DB keys.
             */
             socket.on('disconnecting',()=>{
-                const rooms = Object.keys(socket.rooms);
+                // the guy who left the room
+                const rooms = Array.from(socket.rooms);
+                console.log(rooms)
                 const roomNumber = ( rooms[1] !== undefined && rooms[1] !== null) ? (rooms[1]).split('-')[1] : null;
-                if(rooms !== null){
+                if (rooms !== null) {
                     Promise.all(['totalRoomCount','allRooms'].map(key => redisDB.getAsync(key))).then(values => {
                         let totalRoomCount = values[0];
 
@@ -225,10 +218,10 @@ class Socket{
                         if( fullRoomsPos > -1 ){
                             fullRooms.splice(fullRoomsPos,1);
                         }
-                        if (totalRoomCount > 1) {
+                        if (totalRoomCount > 0) {
                             totalRoomCount--;
                         }else{
-                            totalRoomCount = 1;
+                            totalRoomCount = 0;
                         }
                         redisDB.set("totalRoomCount", totalRoomCount);
                         redisDB.set("allRooms", JSON.stringify({
@@ -236,8 +229,9 @@ class Socket{
                             fullRooms : fullRooms
                         }));
                         IO.sockets.in("room-"+roomNumber).emit('room-disconnect', {id: socket.id});
+                        utils.printLog("User disconnected", IO.sockets.adapter.sids)
                     });
-                }//if ends
+                }
             });
 
         });
