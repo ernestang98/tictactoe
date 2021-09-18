@@ -1,3 +1,9 @@
+## Tutorials Followed:
+
+- [Angular TicTacToe](https://www.youtube.com/watch?v=nEC4iYRD5n0)
+
+- [Websocket Rxjs](https://www.youtube.com/watch?v=dJQWUubvpIc)
+
 ## Debugging Sockets:
 
 - Each tab is one connection to the socket (you can try opening multiple taps and see the logs)
