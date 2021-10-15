@@ -8,7 +8,7 @@
 
 - Each tab is one connection to the socket (you can try opening multiple taps and see the logs)
 
-- There's some asynchronous issue when setting 2 values (happens when room is created). To solve, use mset()
+- There's some asynchronous issue when setting 2 values in redis (happens when room is created). To solve, use [mset()](https://stackoverflow.com/questions/53963926/node-js-redis-set-data-at-once)
 
 - The moment you refresh/exit the tab you're on, 'disconnecting' is triggered
 
