@@ -5,7 +5,6 @@ class Socket{
     constructor(socket, redisDB){
         this.io = socket;
         this.redisDB = redisDB;
-
         this.winCombinationForPlayer1 = [
             ["X", "X", "X", "-", "-", "-", "-", "-", "-"],
             ["-", "-", "-", "X", "X", "X", "-", "-", "-"],
@@ -16,7 +15,6 @@ class Socket{
             ["X", "-", "-", "-", "X", "-", "-", "-", "X"],
             ["-", "-", "X", "-", "X", "-", "X", "-", "-"]
         ];
-
         this.winCombinationForPlayer2 = [
             ["O", "O", "O", "-", "-", "-", "-", "-", "-"],
             ["-", "-", "-", "O", "O", "O", "-", "-", "-"],
@@ -27,7 +25,6 @@ class Socket{
             ["O", "-", "-", "-", "O", "-", "-", "-", "O"],
             ["-", "-", "O", "-", "O", "-", "O", "-", "-"]
         ];
-
         this.redisDB.set("totalRoomCount", 0);
         this.redisDB.set("allRooms", JSON.stringify({
             emptyRooms: [],
@@ -51,34 +48,59 @@ class Socket{
                 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all
                 // basically gets the values of totalRoomCount and allRooms
                 Promise.all(['totalRoomCount','allRooms'].map(key => this.redisDB.getAsync(key))).then(values => {
-                    let totalRoomCount = values[0];
-                    const allRooms = JSON.parse(values[1]);
-                    let fullRooms = allRooms['fullRooms'];
-                    let emptyRooms = allRooms['emptyRooms'];
 
+                    // get new room number based on the highest room number so far
+                    let [totalRoomCount, fullRooms, emptyRooms] = this.redisDBParseTotalRoomsEmptyRoomsFilledRooms(values);
                     let highest_num = 0
                     let max_fullRooms = 0
                     let max_emptyRooms = 0
-
-                    if (fullRooms.length > 0) {
-                        max_fullRooms = Math.max(...fullRooms);
-                    }
-
-                    if (emptyRooms.length > 0) {
-                        max_emptyRooms = Math.max(...emptyRooms);
-                    }
-
+                    if (fullRooms.length > 0) { max_fullRooms = Math.max(...fullRooms); }
+                    if (emptyRooms.length > 0) { max_emptyRooms = Math.max(...emptyRooms); }
                     highest_num = Math.max(max_fullRooms, max_emptyRooms) + 1; 
                     totalRoomCount++;
                     emptyRooms.push(highest_num);
 
-                    // socket joins the room here
-
+                    // socket joins the new room
                     socket.join("room-"+highest_num);
-                    this.redisDB.set("totalRoomCount", totalRoomCount, function (err, res) {
-                        console.log("set: ", res)
+
+                    // Update redis
+                    this.updateRedisDBTotalRoomsEmptyRoomsFilledRooms(redisDB, totalRoomCount, emptyRooms, fullRooms)
+
+                    // Socket emit to everyone in the socket to update rooms available
+                    IO.emit('rooms-available', {
+                        'totalRoomCount' : totalRoomCount,
+                        'fullRooms' : fullRooms,
+                        'emptyRooms': emptyRooms
                     });
-                    this.redisDB.set("allRooms", JSON.stringify({
+
+                    // Socket emit to only the person who created the room "new-room" to trigger changes in frontend
+                    IO.sockets.in("room-"+highest_num).emit('new-room', {
+                        'totalRoomCount' : totalRoomCount,
+                        'fullRooms' : fullRooms,
+                        'emptyRooms': emptyRooms,
+                        'roomNumber' : highest_num
+                    });
+
+                });
+
+            });
+
+            // When player 2 joins the room
+            socket.on('join-room', (data) => {
+
+                // Frontend passes room number to join
+                const roomNumber = data.roomNumber;
+                
+                // update total room count, empty room and full room
+                Promise.all(['totalRoomCount','allRooms'].map(key => this.redisDB.getAsync(key))).then(values => {
+                    let [totalRoomCount, fullRooms, emptyRooms] = this.redisDBParseTotalRoomsEmptyRoomsFilledRooms(values);
+                    let indexPos = emptyRooms.indexOf(roomNumber);
+                    if(indexPos > -1){
+                        emptyRooms.splice(indexPos,1);
+                        fullRooms.push(roomNumber);
+                    }
+                    socket.join("room-"+roomNumber);
+                    redisDB.set("allRooms", JSON.stringify({
                         emptyRooms: emptyRooms,
                         fullRooms : fullRooms
                     }));
@@ -88,118 +110,34 @@ class Socket{
                         'emptyRooms': emptyRooms
                     });
 
-                    // emit new-room for frontend to respond
-                    IO.sockets.in("room-"+highest_num).emit('new-room', {
+                    // Start the game
+                    IO.sockets.in("room-"+roomNumber).emit('start-game', {
                         'totalRoomCount' : totalRoomCount,
                         'fullRooms' : fullRooms,
                         'emptyRooms': emptyRooms,
-                        'roomNumber' : highest_num
+                        'roomNumber' : roomNumber
                     });
 
-                    /* Checking the if the room is empty. */
-                    // let isIncludes = emptyRooms.includes(totalRoomCount);
-
-                    // if(!isIncludes){
-                    //     totalRoomCount++;
-                    //     emptyRooms.push(totalRoomCount);
-                    //     socket.join("room-"+totalRoomCount);
-                    //     this.redisDB.set("totalRoomCount", totalRoomCount, function (err, res) {
-                    //         console.log("set: ", res)
-                    //     });
-                    //     this.redisDB.set("allRooms", JSON.stringify({
-                    //         emptyRooms: emptyRooms,
-                    //         fullRooms : fullRooms
-                    //     }));
-                    //     IO.emit('rooms-available', {
-                    //         'totalRoomCount' : totalRoomCount,
-                    //         'fullRooms' : fullRooms,
-                    //         'emptyRooms': emptyRooms
-                    //     });
-                    //     IO.sockets.in("room-"+totalRoomCount).emit('new-room', {
-                    //         'totalRoomCount' : totalRoomCount,
-                    //         'fullRooms' : fullRooms,
-                    //         'emptyRooms': emptyRooms,
-                    //         'roomNumber' : totalRoomCount
-                    //     });
-                    // }
                 });
             });
 
-            /*
-            * In this event will user can join the selected room
-            * Empty room is actually at least one person inside one
-            * Full room is got 2 people inside
-            */
-            socket.on('join-room', (data) => {
-                const roomNumber = data.roomNumber;
-                Promise.all(['totalRoomCount','allRooms'].map(key => this.redisDB.getAsync(key))).then(values => {
-                    const allRooms = JSON.parse(values[1]);
-                    let totalRoomCount = values[0];
-                    let fullRooms = allRooms['fullRooms'];
-                    let emptyRooms = allRooms['emptyRooms'];
-                    let indexPos = emptyRooms.indexOf(roomNumber);
-                    if(indexPos > -1){
-                        emptyRooms.splice(indexPos,1);
-                        fullRooms.push(roomNumber);
-                    }
-                    /* User Joining socket room */
-                    socket.join("room-"+roomNumber);
-                    redisDB.set("allRooms", JSON.stringify({
-                        emptyRooms: emptyRooms,
-                        fullRooms : fullRooms
-                    }));
-                    /* Getting the room number from socket */
-                    if (IO.sockets.adapter.sids) {
-                        const iter = IO.sockets.adapter.sids.keys()
-                        for (let i of iter) {
-                            const setOfRooms = Array.from(IO.sockets.adapter.sids.get(i))
-                            if (setOfRooms[0] === socket.id) {
-                                let currentRoom = setOfRooms[1]
-                                IO.emit('rooms-available', {
-                                    'totalRoomCount' : totalRoomCount,
-                                    'fullRooms' : fullRooms,
-                                    'emptyRooms': emptyRooms
-                                });
-                                IO.sockets.in("room-"+roomNumber).emit('start-game', {
-                                    'totalRoomCount' : totalRoomCount,
-                                    'fullRooms' : fullRooms,
-                                    'emptyRooms': emptyRooms,
-                                    'roomNumber' : currentRoom.substring(5)
-                                });
-                            }
-                        }
-                    }
-                    utils.printLog("Joined a room!", IO.sockets.adapter.sids)
-                });
-            });
-
-            /*
-            * This event will send played moves between the users
-            * Also Here we will calaculate the winner.
-            */
+            // Whenever a player sends a move!
             socket.on('send-move', (data) => {
-                console.log(data)
+
+                // Grab the player who made the move, the grid, moves played by player and room number
                 const currentPlayer = data.currentPlayer === "X" ? "X" : "O";
-                console.log("Current player: " + currentPlayer)
                 const playedGameGrid = data.playedGameGrid;
                 const movesPlayed = data.movesPlayed;
                 const roomNumber = data.roomNumber;
                 let winner = null;
                 let winCombinationToLookAt = this.winCombinationForPlayer2
-
                 if (currentPlayer === "X") {
                     winCombinationToLookAt = this.winCombinationForPlayer1
                 }
 
+                // Create a temporary player grid from the playedGameGrid to check if its a winning combination
                 let tempPlayedGrid = []
-
-                console.log(winCombinationToLookAt);
-                console.log(currentPlayer)
-                console.log(playedGameGrid)
-
                 for (let o = 0; o < playedGameGrid.length; o++) {
-                    console.log(playedGameGrid[o])
-                    console.log(currentPlayer.toString())
                     if (playedGameGrid[o].toString() !== currentPlayer.toString()) {
                         tempPlayedGrid.push("-")
                     } else {
@@ -207,40 +145,18 @@ class Socket{
                     }
                 }
 
-                console.log("temp player grid: " + tempPlayedGrid)
-
-                /* checking the winner */
-
-                function arrayEquals(firstArray, secondArray) {
-                    if (
-                        !Array.isArray(firstArray)
-                        || !Array.isArray(secondArray)
-                        || firstArray.length !== secondArray.length
-                    ) {
-                        return false;
-                    }
-                    for (let i = 0; i < firstArray.length; i++) {
-                        if (firstArray[i] === "-") {
-                            console.log('this is the checkarray, we can ignore all 0s and focus on the ones that matter');
-                        }
-                        else if (firstArray[i] !== secondArray[i]) {
-                            return false;
-                        }}
-
-                    return true;
-                }
-
+                // check if particular player won or if it is a draw
                 winCombinationToLookAt.forEach((checkField, checkIndex) => {
-                    if (arrayEquals(checkField, tempPlayedGrid)) {
+                    if (this.checkForWins(checkField, tempPlayedGrid)) {
                         winner = "Player " + currentPlayer + " has won!";
                     } else if (movesPlayed === 9) {
                         winner = 'Game Draw';
                     }
                     return false
                 });
-                console.log(winner)
+
+                // if there is no winner or if it is not a draw, then continue to play the game
                 if (winner === null){
-                    console.log(playedGameGrid);
                     socket.broadcast.to("room-"+roomNumber).emit('receive-move', {
                         'position' : data.position,
                         'playedText' : data.playedText,
@@ -248,6 +164,7 @@ class Socket{
                         'board' : playedGameGrid
                     });
                 } else{
+                    // TODO: Fix this such that when there is a draw, then 
                     IO.sockets.in("room-"+roomNumber).emit('receive-move', {
                         'position' : data.position,
                         'playedText' : data.playedText,
@@ -257,36 +174,25 @@ class Socket{
                 }
             });
 
-            /*
-            * Here we will remove the room number from fullrooms array
-            * And we will update teh Redis DB keys.
-            */
+            // When socket disconnects (either via refreshing/closing the browser)
             socket.on('disconnecting',()=>{
-                // the guy who left the room
-                console.log("I am disconnecting")
-                const rooms = Array.from(socket.rooms);
-                console.log(rooms)
 
+                // get the socket that is disconnected and the rooms that they are in!
+                const rooms = Array.from(socket.rooms);
                 if (rooms.length > 1) {
                     let roomNumber = parseInt(rooms[1].substring(5,))
-
                 }
-
                 const roomNumber = ( rooms[1] !== undefined && rooms[1] !== null) ? (rooms[1]).split('-')[1] : null;
-
-                console.log(roomNumber)
-
                 if (rooms !== null) {
                     Promise.all(['totalRoomCount','allRooms'].map(key => redisDB.getAsync(key))).then(values => {
-                        let totalRoomCount = values[0];
 
+                        // update total room count, empty room and full room
+                        let totalRoomCount = values[0];
                         const allRooms = JSON.parse(values[1]);
                         let fullRooms = allRooms['fullRooms'];
                         let emptyRooms = allRooms['emptyRooms'];
-
                         let fullRoomsPos = fullRooms.indexOf(parseInt(roomNumber));
                         let emptyRoomsPos = emptyRooms.indexOf(parseInt(roomNumber));
-
                         if( fullRoomsPos > -1 ){
                             fullRooms.splice(fullRoomsPos,1);
                         }
@@ -303,16 +209,16 @@ class Socket{
                             emptyRooms: emptyRooms,
                             fullRooms : fullRooms
                         }));
+
+                        // let the other player win by default
                         IO.sockets.in("room-"+roomNumber).emit('room-disconnect', {id: socket.id});
 
+                        // update total rooms available
                         IO.emit('rooms-available', {
                             'totalRoomCount' : totalRoomCount,
                             'fullRooms' : fullRooms,
                             'emptyRooms': emptyRooms
                         });
-
-                        utils.printLog("User disconnected", IO.sockets.adapter.sids)
-                        utils.printLog("++++++++", "+++++++")
                     });
                 }
             });
@@ -323,6 +229,46 @@ class Socket{
     socketConfig(){
         this.socketEvents();
     }
+
+    checkForWins(firstArray, secondArray) {
+        if (
+            !Array.isArray(firstArray)
+            || !Array.isArray(secondArray)
+            || firstArray.length !== secondArray.length
+        ) {
+            return false;
+        }
+        for (let i = 0; i < firstArray.length; i++) {
+            if (firstArray[i] === "-") {
+                continue;
+            }
+            else if (firstArray[i] !== secondArray[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    redisDBParseTotalRoomsEmptyRoomsFilledRooms(values){
+        const allRooms = JSON.parse(values[1]);
+        let totalRoomCount = values[0];
+        let fullRooms = allRooms['fullRooms'];
+        let emptyRooms = allRooms['emptyRooms'];
+        return [totalRoomCount, fullRooms, emptyRooms]
+    }
+
+    updateRedisDBTotalRoomsEmptyRoomsFilledRooms(redisDB, totalRoomCount, emptyRooms, fullRooms){
+        redisDB.set("totalRoomCount", totalRoomCount, function (err, res) {});
+        redisDB.set("allRooms", JSON.stringify({
+            emptyRooms: emptyRooms,
+            fullRooms : fullRooms
+        }));
+    }
+
+    logAllSocketSids(){
+        console.log(IO.sockets.adapter.sids)
+    }
+
 }
 
 module.exports = Socket;
