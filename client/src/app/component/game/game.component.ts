@@ -1,5 +1,5 @@
 import {Component, OnInit, ViewChild} from '@angular/core';
-import {GameLogic} from '../game-logic';
+import {GameLogic} from './game-logic';
 import {Renderer} from '@angular/compiler-cli/ngcc/src/rendering/renderer';
 
 @Component({
@@ -63,6 +63,8 @@ export class GameComponent implements OnInit {
 
     // Socket event will total available rooms to play.
     this.game.getRoomsAvailable().subscribe(response => {
+      console.log("HELLO")
+      console.log(response)
       this.totalRooms = response.totalRoomCount;
       this.emptyRooms = response.emptyRooms;
     });
@@ -188,9 +190,6 @@ export class GameComponent implements OnInit {
   }
 
   async clickSquare(subfield: any): Promise<void> {
-    console.log(this.myTurn);
-    console.log(this.whoseTurn);
-    console.log(this.whoWillStart);
     if (this.myTurn) {
       const color = this.currentPlayerTurn === 1 ? 'player-one' : 'player-two';
       if (!(subfield.currentTarget.classList.contains('player-one') ||

@@ -10,7 +10,7 @@ export class GameLogic {
   gameField: Array<number> = [];
   currentTurn: number;
   gameStatus: Status;
-  private BASE_URL = 'http://localhost:4000';
+  private BASE_URL = 'http://localhost:5000';
   public socket;
   private headers = new HttpHeaders({'Content-Type': 'application/json;charset=UTF-8'});
   playerOneWins: Array<Array<number>> = [
@@ -41,7 +41,7 @@ export class GameLogic {
 
   getRoomStats(): Promise<any> {
     return new Promise(resolve => {
-      this.http.get(`http://localhost:4000/getRoomStats`).subscribe(data => {
+      this.http.get(`http://localhost:5000/getRoomStats`).subscribe(data => {
         resolve(data);
       });
     });
@@ -108,7 +108,6 @@ export class GameLogic {
   receivePlayerMove(): any {
     return new Observable(observer => {
       this.socket.on('receive-move', (data) => {
-        console.log('RECEIVED MOVE');
         observer.next(
           data
         );
