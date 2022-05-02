@@ -1,4 +1,4 @@
-const utils = require('./utils');
+// https://stackoverflow.com/questions/20899129/data-lost-after-redis-server-restart (NOTE)
 
 class Socket{
 
@@ -6,7 +6,6 @@ class Socket{
         this.io = socket;
         this.redisDB = redisDB;
 
-        /* Win combination to check winner of the Game.*/
         this.winCombinationForPlayer1 = [
             ["X", "X", "X", "-", "-", "-", "-", "-", "-"],
             ["-", "-", "-", "X", "X", "X", "-", "-", "-"],
@@ -41,13 +40,13 @@ class Socket{
         const redisDB = this.redisDB;
 
         IO.on('connection', (socket) => {
-            socket.setMaxListeners(20); /* Setting Maximum listeners */
-            utils.printLog("New Connection!", IO.sockets.adapter.sids)
-            /*
-            * In this Event user will create a new Room and can ask someone to join. Rooms are joined in increasing
-            * order, hence for line 60, you can just check if the totalroomcount is found in the emptyrooms.
-            */
+
+            // Maximum number of people in the socket
+            socket.setMaxListeners(20);
+
+            // When socket received "create-room"
             socket.on('create-room', (data) => {
+
                 // .getAsync() returns a promise itself
                 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all
                 // basically gets the values of totalRoomCount and allRooms
@@ -57,34 +56,72 @@ class Socket{
                     let fullRooms = allRooms['fullRooms'];
                     let emptyRooms = allRooms['emptyRooms'];
 
-                    /* Checking the if the room is empty. */
-                    let isIncludes = emptyRooms.includes(totalRoomCount);
+                    let highest_num = 0
+                    let max_fullRooms = 0
+                    let max_emptyRooms = 0
 
-                    if(!isIncludes){
-                        totalRoomCount++;
-                        emptyRooms.push(totalRoomCount);
-                        socket.join("room-"+totalRoomCount);
-                        this.redisDB.set("totalRoomCount", totalRoomCount, function (err, res) {
-                            console.log("set: ", res)
-                        });
-                        this.redisDB.set("allRooms", JSON.stringify({
-                            emptyRooms: emptyRooms,
-                            fullRooms : fullRooms
-                        }));
-                        IO.emit('rooms-available', {
-                            'totalRoomCount' : totalRoomCount,
-                            'fullRooms' : fullRooms,
-                            'emptyRooms': emptyRooms
-                        });
-                        IO.sockets.in("room-"+totalRoomCount).emit('new-room', {
-                            'totalRoomCount' : totalRoomCount,
-                            'fullRooms' : fullRooms,
-                            'emptyRooms': emptyRooms,
-                            'roomNumber' : totalRoomCount
-                        });
+                    if (fullRooms.length > 0) {
+                        max_fullRooms = Math.max(...fullRooms);
                     }
 
-                    utils.printLog("Entered a room!", IO.sockets.adapter.sids)
+                    if (emptyRooms.length > 0) {
+                        max_emptyRooms = Math.max(...emptyRooms);
+                    }
+
+                    highest_num = Math.max(max_fullRooms, max_emptyRooms) + 1; 
+                    totalRoomCount++;
+                    emptyRooms.push(highest_num);
+
+                    // socket joins the room here
+
+                    socket.join("room-"+highest_num);
+                    this.redisDB.set("totalRoomCount", totalRoomCount, function (err, res) {
+                        console.log("set: ", res)
+                    });
+                    this.redisDB.set("allRooms", JSON.stringify({
+                        emptyRooms: emptyRooms,
+                        fullRooms : fullRooms
+                    }));
+                    IO.emit('rooms-available', {
+                        'totalRoomCount' : totalRoomCount,
+                        'fullRooms' : fullRooms,
+                        'emptyRooms': emptyRooms
+                    });
+
+                    // emit new-room for frontend to respond
+                    IO.sockets.in("room-"+highest_num).emit('new-room', {
+                        'totalRoomCount' : totalRoomCount,
+                        'fullRooms' : fullRooms,
+                        'emptyRooms': emptyRooms,
+                        'roomNumber' : highest_num
+                    });
+
+                    /* Checking the if the room is empty. */
+                    // let isIncludes = emptyRooms.includes(totalRoomCount);
+
+                    // if(!isIncludes){
+                    //     totalRoomCount++;
+                    //     emptyRooms.push(totalRoomCount);
+                    //     socket.join("room-"+totalRoomCount);
+                    //     this.redisDB.set("totalRoomCount", totalRoomCount, function (err, res) {
+                    //         console.log("set: ", res)
+                    //     });
+                    //     this.redisDB.set("allRooms", JSON.stringify({
+                    //         emptyRooms: emptyRooms,
+                    //         fullRooms : fullRooms
+                    //     }));
+                    //     IO.emit('rooms-available', {
+                    //         'totalRoomCount' : totalRoomCount,
+                    //         'fullRooms' : fullRooms,
+                    //         'emptyRooms': emptyRooms
+                    //     });
+                    //     IO.sockets.in("room-"+totalRoomCount).emit('new-room', {
+                    //         'totalRoomCount' : totalRoomCount,
+                    //         'fullRooms' : fullRooms,
+                    //         'emptyRooms': emptyRooms,
+                    //         'roomNumber' : totalRoomCount
+                    //     });
+                    // }
                 });
             });
 
@@ -226,9 +263,19 @@ class Socket{
             */
             socket.on('disconnecting',()=>{
                 // the guy who left the room
+                console.log("I am disconnecting")
                 const rooms = Array.from(socket.rooms);
                 console.log(rooms)
+
+                if (rooms.length > 1) {
+                    let roomNumber = parseInt(rooms[1].substring(5,))
+
+                }
+
                 const roomNumber = ( rooms[1] !== undefined && rooms[1] !== null) ? (rooms[1]).split('-')[1] : null;
+
+                console.log(roomNumber)
+
                 if (rooms !== null) {
                     Promise.all(['totalRoomCount','allRooms'].map(key => redisDB.getAsync(key))).then(values => {
                         let totalRoomCount = values[0];
@@ -238,8 +285,13 @@ class Socket{
                         let emptyRooms = allRooms['emptyRooms'];
 
                         let fullRoomsPos = fullRooms.indexOf(parseInt(roomNumber));
+                        let emptyRoomsPos = emptyRooms.indexOf(parseInt(roomNumber));
+
                         if( fullRoomsPos > -1 ){
                             fullRooms.splice(fullRoomsPos,1);
+                        }
+                        if( emptyRoomsPos > -1 ){
+                            emptyRooms.splice(emptyRoomsPos,1);
                         }
                         if (totalRoomCount > 0) {
                             totalRoomCount--;
@@ -252,7 +304,15 @@ class Socket{
                             fullRooms : fullRooms
                         }));
                         IO.sockets.in("room-"+roomNumber).emit('room-disconnect', {id: socket.id});
+
+                        IO.emit('rooms-available', {
+                            'totalRoomCount' : totalRoomCount,
+                            'fullRooms' : fullRooms,
+                            'emptyRooms': emptyRooms
+                        });
+
                         utils.printLog("User disconnected", IO.sockets.adapter.sids)
+                        utils.printLog("++++++++", "+++++++")
                     });
                 }
             });
@@ -264,4 +324,5 @@ class Socket{
         this.socketEvents();
     }
 }
+
 module.exports = Socket;
