@@ -34,4 +34,11 @@
 
 * [Decrypting session cookies](https://stackoverflow.com/questions/62407074/expressnodejs-how-to-decrypt-express-session-cookie-during-socket-io-connect)
 
+### TODO 
+
+* [Use session tokens for server side authentication (already implemented I believe)](https://auth0.com/blog/create-a-simple-and-secure-node-express-app/)
+
+* [Angular Routing](https://stackoverflow.com/questions/41922466/redirect-user-with-router-depending-on-logged-in-status)
+
+* [Passport.js with JWT](https://medium.com/front-end-weekly/learn-using-jwt-with-passport-authentication-9761539c4314)
 
